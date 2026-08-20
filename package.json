@@ -1,0 +1,18 @@
+{
+  "name": "commit-object-parser",
+  "version": "0.1.0",
+  "description": "Validating parser and pretty printer for raw git commit objects",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/parser.js",
+  "types": "dist/parser.d.ts",
+  "bin": {
+    "commit-object-parser": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
