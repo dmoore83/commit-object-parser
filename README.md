@@ -65,6 +65,19 @@ $ echo "tree not-a-sha" | node dist/cli.js /dev/stdin
 invalid commit object: missing blank line separating headers from message
 ```
 
+## Testing
+
+Tests use Node's built-in test runner, so there's nothing extra to install:
+
+```sh
+npm test
+```
+
+The suite parses and round-trips real commit shapes: a regular commit, a
+root commit, a merge commit, a gpgsig-signed commit, and a commit with
+non-ASCII author/committer names, alongside the malformed-input cases that
+should be rejected.
+
 ## What's validated
 
 - `tree` is present exactly once and is a well-formed sha1 or sha256 id
