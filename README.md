@@ -93,3 +93,9 @@ Early skeleton: the core headers (`tree`, `parent`, `author`, `committer`)
 are fully validated, and unrecognized headers like `gpgsig` or `mergetag`
 are preserved (including multi-line continuation) without being
 interpreted. See the roadmap for what's next.
+
+`src/armor.ts` can dearmor and re-armor the OpenPGP ASCII-armor envelope a
+`gpgsig` header's value is written in - decoding the base64 body and
+checking its CRC24 checksum - but that's just the envelope. It isn't wired
+into `parseCommit` yet, and nothing yet reads the decoded bytes as a
+signature packet or checks it against a key.
