@@ -29,6 +29,11 @@ export const MERGE_COMMIT =
 // gpgsig continuation lines each carry a single leading space, including
 // the blank line in the middle of the armored block - that's how git
 // distinguishes "still part of this header" from "end of headers".
+//
+// The armored body here is empty: CRC24("") is the algorithm's own init
+// value, 0xb704ce, which base64-encodes to "twTO" - see armor.test.ts for
+// the same fixed point. That keeps this fixture's checksum verifiable by
+// inspection instead of by trusting a pasted base64 blob.
 export const SIGNED_COMMIT =
   "tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904\n" +
   "parent 1a2b3c4d5e6f70819203a4b5c6d7e8f901234567\n" +
@@ -36,9 +41,7 @@ export const SIGNED_COMMIT =
   "committer Jane Doe <jane@example.com> 1704067200 +0000\n" +
   "gpgsig -----BEGIN PGP SIGNATURE-----\n" +
   " \n" +
-  " iQEzBAABCAAdFiEEab12cd34ef56ab12cd34ef56ab12cd34ef56FAmVkAAoJEAB\n" +
-  " CDEFabcdefABCDEFabcdefABCDEFabcdefABCDEFabcdefABCDEFabcdefABCD\n" +
-  " =Ab3d\n" +
+  " =twTO\n" +
   " -----END PGP SIGNATURE-----\n" +
   "\n" +
   "Sign this commit\n";

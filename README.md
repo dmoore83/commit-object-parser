@@ -86,16 +86,20 @@ should be rejected.
   `name <email> timestamp tz-offset`
 - header continuation lines (used by e.g. `gpgsig`) are attached to the
   header they continue, not dropped or misparsed as new headers
+- if present, `gpgsig` is a well-formed OpenPGP ASCII-armor envelope
+  (`src/armor.ts`): valid BEGIN/END markers, headers, base64 body, and a
+  matching CRC24 checksum
 
 ## Status
 
 Early skeleton: the core headers (`tree`, `parent`, `author`, `committer`)
-are fully validated, and unrecognized headers like `gpgsig` or `mergetag`
-are preserved (including multi-line continuation) without being
-interpreted. See the roadmap for what's next.
+are fully validated, and unrecognized headers like `mergetag` are preserved
+(including multi-line continuation) without being interpreted. See the
+roadmap for what's next.
 
-`src/armor.ts` can dearmor and re-armor the OpenPGP ASCII-armor envelope a
-`gpgsig` header's value is written in - decoding the base64 body and
-checking its CRC24 checksum - but that's just the envelope. It isn't wired
-into `parseCommit` yet, and nothing yet reads the decoded bytes as a
-signature packet or checks it against a key.
+`parseCommit` dearmors a `gpgsig` header's value and exposes the decoded
+envelope as `commit.signature` (type, headers, and raw body bytes) -
+rejecting the commit if the envelope itself is malformed. The raw header
+text is still kept in `extraHeaders` untouched, so canonical printing keeps
+round-tripping byte for byte. Nothing yet reads those bytes as an actual
+OpenPGP signature packet or checks it against a key - that's next.

@@ -12,6 +12,8 @@
 // Header values can span multiple lines: continuation lines start with a
 // single space, which is how gpgsig blocks survive inside a single header.
 
+import { ArmoredBlock, dearmor } from "./armor.js";
+
 export interface PersonStamp {
   name: string;
   email: string;
@@ -31,6 +33,12 @@ export interface ParsedCommit {
   committer: PersonStamp;
   extraHeaders: CommitHeader[];
   message: string;
+  // Present when a `gpgsig` header was found and its value is a
+  // well-formed OpenPGP armor envelope. The raw header text is still kept
+  // in extraHeaders untouched, for round-tripping; this is the dearmored
+  // form of the same bytes, for anything that wants to inspect the
+  // signature packet itself.
+  signature?: ArmoredBlock;
 }
 
 export class CommitParseError extends Error {
@@ -97,6 +105,7 @@ export function parseCommit(raw: string): ParsedCommit {
   let tree: string | undefined;
   let author: PersonStamp | undefined;
   let committer: PersonStamp | undefined;
+  let signature: ArmoredBlock | undefined;
   const parents: string[] = [];
   const extraHeaders: CommitHeader[] = [];
 
@@ -117,6 +126,16 @@ export function parseCommit(raw: string): ParsedCommit {
         if (committer !== undefined) throw new CommitParseError("duplicate committer header");
         committer = parsePerson("committer", header.value);
         break;
+      case "gpgsig":
+        if (signature !== undefined) throw new CommitParseError("duplicate gpgsig header");
+        try {
+          signature = dearmor(header.value);
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          throw new CommitParseError(`malformed gpgsig header: ${reason}`);
+        }
+        extraHeaders.push(header);
+        break;
       default:
         extraHeaders.push(header);
     }
@@ -126,5 +145,5 @@ export function parseCommit(raw: string): ParsedCommit {
   if (author === undefined) throw new CommitParseError("missing author header");
   if (committer === undefined) throw new CommitParseError("missing committer header");
 
-  return { tree, parents, author, committer, extraHeaders, message };
+  return { tree, parents, author, committer, extraHeaders, message, signature };
 }

@@ -53,7 +53,7 @@ test("printHuman shifts the wall-clock time for a positive offset", () => {
 
 test("printHuman notes extra headers without rendering their content", () => {
   const human = printHuman(parseCommit(SIGNED_COMMIT));
-  assert.ok(human.includes("gpgsig (6 line(s), not rendered)"));
+  assert.ok(human.includes("gpgsig (4 line(s), not rendered)"));
   assert.ok(!human.includes("BEGIN PGP SIGNATURE"));
 });
 

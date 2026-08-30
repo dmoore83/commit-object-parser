@@ -53,7 +53,34 @@ test("preserves a multi-line gpgsig header without interpreting it", () => {
   assert.equal(gpgsig.key, "gpgsig");
   assert.ok(gpgsig.value.startsWith("-----BEGIN PGP SIGNATURE-----\n"));
   assert.ok(gpgsig.value.endsWith("-----END PGP SIGNATURE-----"));
-  assert.equal(gpgsig.value.split("\n").length, 6);
+  assert.equal(gpgsig.value.split("\n").length, 4);
+});
+
+test("dearmors a gpgsig header into commit.signature", () => {
+  const commit = parseCommit(SIGNED_COMMIT);
+  assert.ok(commit.signature);
+  assert.equal(commit.signature.type, "SIGNATURE");
+  assert.equal(commit.signature.body.length, 0);
+});
+
+test("leaves commit.signature undefined when there is no gpgsig header", () => {
+  const commit = parseCommit(REGULAR_COMMIT);
+  assert.equal(commit.signature, undefined);
+});
+
+test("rejects a gpgsig header whose armor checksum doesn't match", () => {
+  const raw = SIGNED_COMMIT.replace(" =twTO\n", " =AAAA\n");
+  assert.throws(() => parseCommit(raw), /malformed gpgsig header: armor checksum mismatch/);
+});
+
+test("rejects a gpgsig header that isn't a valid armor block", () => {
+  const raw =
+    "tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904\n" +
+    "author Jane Doe <jane@example.com> 1704067200 +0000\n" +
+    "committer Jane Doe <jane@example.com> 1704067200 +0000\n" +
+    "gpgsig not an armor block\n" +
+    "\nmsg\n";
+  assert.throws(() => parseCommit(raw), /malformed gpgsig header: missing armor header line/);
 });
 
 test("parses non-ASCII author and committer names", () => {
