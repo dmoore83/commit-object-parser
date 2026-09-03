@@ -101,5 +101,22 @@ roadmap for what's next.
 envelope as `commit.signature` (type, headers, and raw body bytes) -
 rejecting the commit if the envelope itself is malformed. The raw header
 text is still kept in `extraHeaders` untouched, so canonical printing keeps
-round-tripping byte for byte. Nothing yet reads those bytes as an actual
-OpenPGP signature packet or checks it against a key - that's next.
+round-tripping byte for byte.
+
+`src/openpgp.ts` reads those bytes as actual OpenPGP packets and checks a
+signed commit against an RSA public key:
+
+```ts
+import { dearmor } from "./src/armor.js";
+import { verifyCommitSignature } from "./src/openpgp.js";
+
+const publicKeyBlock = dearmor(readFileSync("signer.pgp.asc", "utf8"));
+const result = verifyCommitSignature(commit, publicKeyBlock);
+console.log(result.valid ? "signature ok" : `signature invalid: ${result.reason}`);
+```
+
+It supports version-4 RSA signatures (SHA-1/224/256/384/512), the only kind
+`git commit -S` with an RSA key produces. The public key is imported into
+node:crypto via its raw modulus and exponent, so no ASN.1 DER encoding is
+built by hand. DSA/ECDSA keys, and non-RSA signatures, are rejected rather
+than silently skipped. Not wired into the CLI yet.
