@@ -53,9 +53,15 @@ Or from the command line, after building:
 
 ```sh
 npm run build
-node dist/cli.js commit.txt            # canonical form
-node dist/cli.js commit.txt --human    # human-readable form
+node dist/cli.js commit.txt                          # canonical form
+node dist/cli.js commit.txt --human                  # human-readable form
+node dist/cli.js commit.txt --verify signer.pgp.asc   # also check the gpgsig header
 ```
+
+`--verify` takes the path to an armored RSA public key block (the same
+format `gpg --export --armor` produces) and checks it against the commit's
+`gpgsig` header, printing `signature: valid` or `signature: invalid (reason)`
+and exiting nonzero if it doesn't check out.
 
 A malformed object is rejected with a specific reason instead of being
 silently accepted:
@@ -119,4 +125,4 @@ It supports version-4 RSA signatures (SHA-1/224/256/384/512), the only kind
 `git commit -S` with an RSA key produces. The public key is imported into
 node:crypto via its raw modulus and exponent, so no ASN.1 DER encoding is
 built by hand. DSA/ECDSA keys, and non-RSA signatures, are rejected rather
-than silently skipped. Not wired into the CLI yet.
+than silently skipped. Wired into the CLI as `--verify`, above.

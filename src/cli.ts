@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { parseCommit } from "./parser.js";
+import { dearmor } from "./armor.js";
+import { verifyCommitSignature } from "./openpgp.js";
+import { parseCommit, ParsedCommit } from "./parser.js";
 import { printCanonical, printHuman } from "./printer.js";
+
+const USAGE = "usage: commit-object-parser <commit-object-file> [--human] [--verify <public-key-file>]\n";
 
 export interface CliIO {
   readFile: (path: string) => string;
@@ -14,22 +18,65 @@ export interface CliIO {
 // can be exercised in tests without touching the real filesystem or stdio.
 export function runCli(argv: string[], io: CliIO): number {
   const args = argv.slice(2);
-  const humanFlag = args.includes("--human");
-  const filePath = args.find((a) => !a.startsWith("--"));
+  let humanFlag = false;
+  let verifyKeyPath: string | undefined;
+  let filePath: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--human") {
+      humanFlag = true;
+    } else if (arg === "--verify") {
+      i++;
+      if (args[i] === undefined) {
+        io.writeErr("--verify requires a public key file argument\n");
+        return 1;
+      }
+      verifyKeyPath = args[i];
+    } else if (arg.startsWith("--")) {
+      io.writeErr(`unrecognized flag: ${arg}\n`);
+      return 1;
+    } else if (filePath === undefined) {
+      filePath = arg;
+    } else {
+      io.writeErr(`unexpected argument: ${arg}\n`);
+      return 1;
+    }
+  }
 
   if (!filePath) {
-    io.writeErr("usage: commit-object-parser <commit-object-file> [--human]\n");
+    io.writeErr(USAGE);
     return 1;
   }
 
   const raw = io.readFile(filePath);
+  let commit: ParsedCommit;
   try {
-    const commit = parseCommit(raw);
-    io.writeOut((humanFlag ? printHuman(commit) : printCanonical(commit)) + "\n");
-    return 0;
+    commit = parseCommit(raw);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     io.writeErr(`invalid commit object: ${message}\n`);
+    return 1;
+  }
+
+  io.writeOut((humanFlag ? printHuman(commit) : printCanonical(commit)) + "\n");
+
+  if (verifyKeyPath === undefined) {
+    return 0;
+  }
+
+  try {
+    const publicKeyBlock = dearmor(io.readFile(verifyKeyPath));
+    const result = verifyCommitSignature(commit, publicKeyBlock);
+    if (!result.valid) {
+      io.writeOut(`signature: invalid (${result.reason})\n`);
+      return 1;
+    }
+    io.writeOut("signature: valid\n");
+    return 0;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    io.writeErr(`signature verification failed: ${message}\n`);
     return 1;
   }
 }
