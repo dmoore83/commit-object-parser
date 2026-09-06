@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { dearmor } from "./armor.js";
+import { decodeCommitObject } from "./encoding.js";
 import { verifyCommitSignature } from "./openpgp.js";
 import { parseCommit, ParsedCommit } from "./parser.js";
 import { printCanonical, printHuman } from "./printer.js";
@@ -10,6 +11,7 @@ const USAGE = "usage: commit-object-parser <commit-object-file> [--human] [--ver
 
 export interface CliIO {
   readFile: (path: string) => string;
+  readFileBytes: (path: string) => Uint8Array;
   writeOut: (text: string) => void;
   writeErr: (text: string) => void;
 }
@@ -49,7 +51,15 @@ export function runCli(argv: string[], io: CliIO): number {
     return 1;
   }
 
-  const raw = io.readFile(filePath);
+  let raw: string;
+  try {
+    raw = decodeCommitObject(io.readFileBytes(filePath));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    io.writeErr(`invalid commit object: ${message}\n`);
+    return 1;
+  }
+
   let commit: ParsedCommit;
   try {
     commit = parseCommit(raw);
@@ -84,6 +94,7 @@ export function runCli(argv: string[], io: CliIO): number {
 function main(argv: string[]): void {
   process.exitCode = runCli(argv, {
     readFile: (path) => readFileSync(path, "utf8"),
+    readFileBytes: (path) => readFileSync(path),
     writeOut: (text) => process.stdout.write(text),
     writeErr: (text) => process.stderr.write(text),
   });

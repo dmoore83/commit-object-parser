@@ -100,8 +100,27 @@ should be rejected.
 
 Early skeleton: the core headers (`tree`, `parent`, `author`, `committer`)
 are fully validated, and unrecognized headers like `mergetag` are preserved
-(including multi-line continuation) without being interpreted. See the
-roadmap for what's next.
+(including multi-line continuation) without being interpreted. Next up: a
+`--diff` mode showing canonical-vs-input byte differences, then publishing
+this as an npm package once the API stabilizes.
+
+A commit's bytes aren't always UTF-8: git lets a commit declare a different
+charset with an `encoding` header (e.g. `encoding ISO-8859-1`), and the
+message and author/committer names outside of ASCII are only meaningful
+once decoded that way. `src/encoding.ts` reads the raw bytes of a commit
+object, checks for that header, and decodes accordingly before the text
+ever reaches `parseCommit`:
+
+```ts
+import { readFileSync } from "node:fs";
+import { decodeCommitObject } from "./src/encoding.js";
+import { parseCommit } from "./src/parser.js";
+
+const commit = parseCommit(decodeCommitObject(readFileSync("commit.txt")));
+```
+
+The CLI does this automatically now, so `node dist/cli.js commit.txt` works
+on a non-UTF-8 commit object without any extra flag.
 
 `parseCommit` dearmors a `gpgsig` header's value and exposes the decoded
 envelope as `commit.signature` (type, headers, and raw body bytes) -
