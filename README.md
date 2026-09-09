@@ -55,6 +55,7 @@ Or from the command line, after building:
 npm run build
 node dist/cli.js commit.txt                          # canonical form
 node dist/cli.js commit.txt --human                  # human-readable form
+node dist/cli.js commit.txt --diff                    # canonical vs input, line by line
 node dist/cli.js commit.txt --verify signer.pgp.asc   # also check the gpgsig header
 ```
 
@@ -62,6 +63,25 @@ node dist/cli.js commit.txt --verify signer.pgp.asc   # also check the gpgsig he
 format `gpg --export --armor` produces) and checks it against the commit's
 `gpgsig` header, printing `signature: valid` or `signature: invalid (reason)`
 and exiting nonzero if it doesn't check out.
+
+`--diff` reparses the input, reprints it in canonical form, and shows the
+two side by side, one line per input/canonical line, marked the way `diff -u`
+marks lines (` ` unchanged, `-` only in the input, `+` only in canonical
+form). Well-formed commits round-trip exactly, so this is normally
+`no differences: input already matches canonical form` - a non-empty diff
+means the parser accepted something it can't reproduce byte for byte, e.g.
+headers in a non-standard order:
+
+```
+$ node dist/cli.js weird-order-commit.txt --diff
+ tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+ parent 1a2b3c4d5e6f70819203a4b5c6d7e8f901234567
+-committer Jane Doe <jane@example.com> 1704067200 +0000
+ author Jane Doe <jane@example.com> 1704067200 +0000
++committer Jane Doe <jane@example.com> 1704067200 +0000
+ 
+ Fix off-by-one in changelog generator
+```
 
 A malformed object is rejected with a specific reason instead of being
 silently accepted:
@@ -100,9 +120,8 @@ should be rejected.
 
 Early skeleton: the core headers (`tree`, `parent`, `author`, `committer`)
 are fully validated, and unrecognized headers like `mergetag` are preserved
-(including multi-line continuation) without being interpreted. Next up: a
-`--diff` mode showing canonical-vs-input byte differences, then publishing
-this as an npm package once the API stabilizes.
+(including multi-line continuation) without being interpreted. Next up:
+publishing this as an npm package once the API stabilizes.
 
 A commit's bytes aren't always UTF-8: git lets a commit declare a different
 charset with an `encoding` header (e.g. `encoding ISO-8859-1`), and the

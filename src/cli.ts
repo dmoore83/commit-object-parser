@@ -2,12 +2,14 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { dearmor } from "./armor.js";
+import { formatDiff } from "./diff.js";
 import { decodeCommitObject } from "./encoding.js";
 import { verifyCommitSignature } from "./openpgp.js";
 import { parseCommit, ParsedCommit } from "./parser.js";
 import { printCanonical, printHuman } from "./printer.js";
 
-const USAGE = "usage: commit-object-parser <commit-object-file> [--human] [--verify <public-key-file>]\n";
+const USAGE =
+  "usage: commit-object-parser <commit-object-file> [--human] [--diff] [--verify <public-key-file>]\n";
 
 export interface CliIO {
   readFile: (path: string) => string;
@@ -21,6 +23,7 @@ export interface CliIO {
 export function runCli(argv: string[], io: CliIO): number {
   const args = argv.slice(2);
   let humanFlag = false;
+  let diffFlag = false;
   let verifyKeyPath: string | undefined;
   let filePath: string | undefined;
 
@@ -28,6 +31,8 @@ export function runCli(argv: string[], io: CliIO): number {
     const arg = args[i];
     if (arg === "--human") {
       humanFlag = true;
+    } else if (arg === "--diff") {
+      diffFlag = true;
     } else if (arg === "--verify") {
       i++;
       if (args[i] === undefined) {
@@ -51,6 +56,11 @@ export function runCli(argv: string[], io: CliIO): number {
     return 1;
   }
 
+  if (humanFlag && diffFlag) {
+    io.writeErr("--human and --diff cannot be combined\n");
+    return 1;
+  }
+
   let raw: string;
   try {
     raw = decodeCommitObject(io.readFileBytes(filePath));
@@ -69,7 +79,12 @@ export function runCli(argv: string[], io: CliIO): number {
     return 1;
   }
 
-  io.writeOut((humanFlag ? printHuman(commit) : printCanonical(commit)) + "\n");
+  const output = diffFlag
+    ? formatDiff(raw, printCanonical(commit))
+    : humanFlag
+    ? printHuman(commit)
+    : printCanonical(commit);
+  io.writeOut(output + "\n");
 
   if (verifyKeyPath === undefined) {
     return 0;

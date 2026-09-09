@@ -84,6 +84,38 @@ test("rejects an unrecognized flag", () => {
   assert.equal(io.err, "unrecognized flag: --bogus\n");
 });
 
+test("--diff reports no differences for a well-formed commit", () => {
+  const io = fakeIO({ "commit.txt": REGULAR_COMMIT });
+  const exitCode = runCli(["node", "cli.js", "commit.txt", "--diff"], io);
+  assert.equal(exitCode, 0);
+  assert.equal(io.out, "no differences: input already matches canonical form\n");
+});
+
+test("--diff shows reordered headers as removed and added lines", () => {
+  // author and committer swapped, which parseCommit accepts (it doesn't
+  // enforce header order) but printCanonical always writes in canonical order.
+  const reordered =
+    "tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904\n" +
+    "parent 1a2b3c4d5e6f70819203a4b5c6d7e8f901234567\n" +
+    "committer Jane Doe <jane@example.com> 1704067200 +0000\n" +
+    "author Jane Doe <jane@example.com> 1704067200 +0000\n" +
+    "\n" +
+    "Fix off-by-one in changelog generator\n";
+  const io = fakeIO({ "commit.txt": reordered });
+  const exitCode = runCli(["node", "cli.js", "commit.txt", "--diff"], io);
+  assert.equal(exitCode, 0);
+  assert.ok(io.out.includes("-committer Jane Doe <jane@example.com> 1704067200 +0000"));
+  assert.ok(io.out.includes("+committer Jane Doe <jane@example.com> 1704067200 +0000"));
+  assert.ok(io.out.includes(" author Jane Doe <jane@example.com> 1704067200 +0000"));
+});
+
+test("rejects --human combined with --diff", () => {
+  const io = fakeIO({ "commit.txt": REGULAR_COMMIT });
+  const exitCode = runCli(["node", "cli.js", "commit.txt", "--human", "--diff"], io);
+  assert.equal(exitCode, 1);
+  assert.equal(io.err, "--human and --diff cannot be combined\n");
+});
+
 test("rejects a --verify with no key path argument", () => {
   const io = fakeIO({ "commit.txt": REGULAR_COMMIT });
   const exitCode = runCli(["node", "cli.js", "commit.txt", "--verify"], io);
