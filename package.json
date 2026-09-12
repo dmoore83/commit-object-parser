@@ -4,11 +4,17 @@
   "description": "Validating parser and pretty printer for raw git commit objects",
   "license": "MIT",
   "type": "module",
-  "main": "dist/parser.js",
-  "types": "dist/parser.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
     "commit-object-parser": "dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p .",
     "test": "tsc -p . && node --test dist"

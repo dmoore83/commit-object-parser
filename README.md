@@ -36,8 +36,7 @@ Parse it as a library:
 
 ```ts
 import { readFileSync } from "node:fs";
-import { parseCommit } from "./src/parser.js";
-import { printCanonical, printHuman } from "./src/printer.js";
+import { parseCommit, printCanonical, printHuman } from "./src/index.js";
 
 const raw = readFileSync("commit.txt", "utf8");
 const commit = parseCommit(raw);
@@ -120,8 +119,10 @@ should be rejected.
 
 Early skeleton: the core headers (`tree`, `parent`, `author`, `committer`)
 are fully validated, and unrecognized headers like `mergetag` are preserved
-(including multi-line continuation) without being interpreted. Next up:
-publishing this as an npm package once the API stabilizes.
+(including multi-line continuation) without being interpreted. `src/index.ts`
+is the intended public entry point once this is published as an npm
+package - everything else under `src/` is reachable but not part of the
+stable surface.
 
 A commit's bytes aren't always UTF-8: git lets a commit declare a different
 charset with an `encoding` header (e.g. `encoding ISO-8859-1`), and the
