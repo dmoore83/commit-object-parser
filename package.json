@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "Validating parser and pretty printer for raw git commit objects",
   "license": "MIT",
+  "author": "dmoore83",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmoore83/commit-object-parser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dmoore83/commit-object-parser/issues"
+  },
+  "homepage": "https://github.com/dmoore83/commit-object-parser#readme",
+  "keywords": [
+    "git",
+    "commit",
+    "parser",
+    "gpg",
+    "openpgp",
+    "signature-verification",
+    "cli"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
