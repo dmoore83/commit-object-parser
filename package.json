@@ -22,6 +22,9 @@
     "cli"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -35,7 +38,8 @@
   ],
   "scripts": {
     "build": "tsc -p .",
-    "test": "tsc -p . && node --test dist"
+    "test": "tsc -p . && node --test dist",
+    "prepublishOnly": "npm test"
   },
   "devDependencies": {
     "typescript": "^5.5.0"
